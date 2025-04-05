@@ -1,16 +1,15 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 import os
 from model_utils import train_model, run_model, get_model_list
-from watchlistsub import app
 
-# app = Flask(__name__)
-# app.secret_key = 'demo' 
+app = Flask(__name__)
+app.secret_key = 'demo' 
 UPLOAD_FOLDER = 'uploads'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
-    app.logger.info("baobao")
+    app.logger.info("Home page accessed")
     return render_template('index.html')
 
 @app.route('/client1')

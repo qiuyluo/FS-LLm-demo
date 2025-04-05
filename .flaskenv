@@ -1,2 +1,2 @@
 FLASK_ENV=development
-FLASK_APP=watchlistsub
+FLASK_APP=watchlistsub/app.py
