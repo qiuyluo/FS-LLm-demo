@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Client 2</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div style="text-align:right">login/logout</div>
+  <h1 style="text-align:center;">Client 2</h1>
+  <div style="display:flex; justify-content:center; gap:50px; padding:20px;">
+    <div>
+      <h2>Update Dataset</h2>
+      <p>Initialize the model and customize the llm</p>
+      <form action="{{ url_for('upload', client_id='client2') }}" method="post" enctype="multipart/form-data">
+        <input type="file" name="file">
+        <button type="submit">Upload</button>
+      </form>
+    </div>
+    <div>
+      <h2>Ask Questions</h2>
+      <p>test your customize llm</p>
+      <form action="{{ url_for('client2_ask') }}">
+        <button type="submit">Go</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
