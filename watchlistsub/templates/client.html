@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{{ client_name }}{% endblock %}
+{% block header %}{{ client_name }}{% endblock %}
+{% block content %}
+    <div class="card">
+        <h2>Update Dataset</h2>
+        <p style="color: #347bd2;">Initialize the model and customize the llm</p>
+        <form action="/upload_json" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="client" value="{{ client_name }}">
+            <input type="file" name="json_file"><br><br>
+            <button class="blue-button" type="submit">Upload</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Ask Questions</h2>
+        <p style="color: #347bd2;">test your customize llm</p>
+        <form action="/ask_questions" method="get">
+            <input type="hidden" name="client" value="{{ client_name }}">
+            <button class="blue-button">Go</button>
+        </form>
+    </div>
+{% endblock %}

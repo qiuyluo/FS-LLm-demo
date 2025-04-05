@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Ask Questions{% endblock %}
+{% block header %}Ask Questions{% endblock %}
+{% block content %}
+    <form method="post">
+        <h3 style="color: #347bd2;">Choose your model</h3>
+        <select name="model_name">
+            {% for model in models %}
+                <option value="{{ model }}">{{ model }}</option>
+            {% endfor %}
+        </select>
+
+        <h3 style="color: #347bd2;">Type your question</h3>
+        <textarea name="question"></textarea><br>
+        <button class="blue-button" type="submit">Ask</button>
+    </form>
+
+    {% if answer %}
+    <div class="card" style="margin-top: 2em;">
+        <h3>Answer:</h3>
+        <p>{{ answer }}</p>
+    </div>
+    {% endif %}
+{% endblock %}
