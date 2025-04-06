@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Ask Questions - Client 2</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script>
+    async function sendQuestion() {
+      const model = document.getElementById("model").value;
+      const question = document.getElementById("question").value;
+
+      const res = await fetch("/ask/client1", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ model: model, question: question })
+      });
+
+      const data = await res.json();
+      document.getElementById("answer").innerText = data.answer;
+    }
+  </script>
+</head>
+<body>
+  <div class="header">
+    Ask Questions
+    <a class="login-btn" href="#">login/logout</a>
+    <div style="position: absolute; top: 20px; left: 30px; font-size: 20px;">client 2</div>
+  </div>
+
+  <div class="ask-section">
+    <label for="model">Choose your model</label>
+    <select id="model">
+      {% for model in model_list %}
+        <option value="{{ model }}">{{ model }}</option>
+      {% endfor %}
+    </select>
+
+    <label for="question">Type your question</label>
+    <textarea id="question" rows="4"></textarea>
+
+    <br><br>
+    <button onclick="sendQuestion()">Ask</button>
+
+    <div id="answer" class="answer-box">answer area</div>
+  </div>
+</body>
+</html>
