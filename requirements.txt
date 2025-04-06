@@ -35,3 +35,9 @@ werkzeug==2.1.2
     #   flask-login
 zipp==3.8.1
     # via importlib-metadata
+huggingface_hub
+    # via -r requirements.in
+    #   transformers
+    #   datasets
+    #   accelerate
+    #   diffusers
