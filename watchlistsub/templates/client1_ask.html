@@ -17,6 +17,21 @@
       const data = await res.json();
       document.getElementById("answer").innerText = data.answer;
     }
+
+    window.onload = function () {
+      const allModels = JSON.parse('{{ model_list | tojson | safe }}');
+      const filteredModels = allModels.filter(name =>
+        name.startsWith("server") || name.includes("client_1")
+      );
+
+      const select = document.getElementById("model");
+      filteredModels.forEach(model => {
+        const option = document.createElement("option");
+        option.value = model;
+        option.textContent = model;
+        select.appendChild(option);
+      });
+    };
   </script>
 </head>
 <body>
@@ -29,9 +44,7 @@
   <div class="ask-section">
     <label for="model">Choose your model</label>
     <select id="model">
-      {% for model in model_list %}
-        <option value="{{ model }}">{{ model }}</option>
-      {% endfor %}
+      <!-- Options will be injected by JavaScript -->
     </select>
 
     <label for="question">Type your question</label>
@@ -42,5 +55,6 @@
 
     <div id="answer" class="answer-box">answer area</div>
   </div>
+
 </body>
 </html>

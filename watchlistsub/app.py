@@ -5,7 +5,7 @@ import os
 import tempfile
 from model_utils import get_answer
 
-HF_TOKEN = "hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"  # Replace with your actual token
+HF_TOKEN = "hf_xxxxxxxx"  # Replace with your actual token
 REPO_ID = "Annie0430/test_fileIO"
 CKPT_PREFIX = "test_whole_process/server/ckpt/"
 

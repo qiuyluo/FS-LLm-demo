@@ -8,7 +8,7 @@
       const model = document.getElementById("model").value;
       const question = document.getElementById("question").value;
 
-      const res = await fetch("/ask/client1", {
+      const res = await fetch("/ask/client2", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         body: new URLSearchParams({ model: model, question: question })
@@ -17,6 +17,21 @@
       const data = await res.json();
       document.getElementById("answer").innerText = data.answer;
     }
+
+    window.onload = function () {
+      const allModels = JSON.parse('{{ model_list | tojson | safe }}');
+      const filteredModels = allModels.filter(name =>
+        name.startsWith("server") || name.includes("client_2")
+      );
+
+      const select = document.getElementById("model");
+      filteredModels.forEach(model => {
+        const option = document.createElement("option");
+        option.value = model;
+        option.textContent = model;
+        select.appendChild(option);
+      });
+    };
   </script>
 </head>
 <body>
@@ -29,9 +44,7 @@
   <div class="ask-section">
     <label for="model">Choose your model</label>
     <select id="model">
-      {% for model in model_list %}
-        <option value="{{ model }}">{{ model }}</option>
-      {% endfor %}
+      <!-- Dynamically populated -->
     </select>
 
     <label for="question">Type your question</label>
