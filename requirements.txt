@@ -41,3 +41,6 @@ huggingface_hub
     #   datasets
     #   accelerate
     #   diffusers
+torch
+transformers
+peft
