@@ -1,59 +1,285 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Ask Questions - Client 2</title>
+  <title>Workflow Builder - Client 2</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    #playground {
+      width: 90vw;
+      min-width: 600px;
+      max-width: 1400px;
+      min-height: 600px;
+      margin: 0 auto;
+      border: 1px solid #ccc;
+      background: #fafbfc;
+      position: relative;
+      overflow: auto;
+    }
+    .node {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background-color: #007bff;
+      color: white;
+      text-align: center;
+      line-height: 60px;
+      position: absolute;
+      cursor: pointer;
+      z-index: 10;
+      font-size: 16px;
+      font-weight: bold;
+      user-select: none;
+      box-shadow: 0 2px 8px #0001;
+    }
+    .context-menu {
+      position: absolute;
+      background-color: white;
+      border: 1px solid #aaa;
+      z-index: 1000;
+      display: none;
+      min-width: 120px;
+      box-shadow: 2px 2px 6px #aaa;
+    }
+    .context-menu ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .context-menu li {
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+    .context-menu li:hover {
+      background-color: #eee;
+    }
+    #svgArrows {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 1;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="ask-section">
+    <label for="model">Choose your model</label>
+    <select id="model"></select>
+    <label for="question" style="margin-left:1em;">Enter a workflow node name</label>
+    <input type="text" id="question">
+    <button onclick="submitNode()">Submit</button>
+  </div>
+  <div id="playground"></div>
+  <div id="contextMenu" class="context-menu"><ul></ul></div>
+
   <script>
-    async function sendQuestion() {
-      const model = document.getElementById("model").value;
-      const question = document.getElementById("question").value;
+    // ========== Intialize the dropdowm ==========
+    let modelList = JSON.parse('{{ model_list | tojson | safe }}');
+    let filteredModels = modelList.filter(name => name.startsWith("server") || name.includes("client_2_round"));
+    let select = document.getElementById("model");
+    filteredModels.forEach(m => {
+      let opt = document.createElement("option");
+      opt.value = m;
+      opt.textContent = m;
+      select.appendChild(opt);
+    });
 
-      const res = await fetch("/ask/client2", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ model: model, question: question })
-      });
+    // ========== global ==========
+    let nodeId = 0;
+    let nodes = [];
 
-      const data = await res.json();
-      document.getElementById("answer").innerText = data.answer;
+    // only one SVG layer
+    function ensureSvgLayer() {
+      let svg = document.getElementById("svgArrows");
+      if (!svg) {
+        svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        svg.id = "svgArrows";
+        svg.style.position = "absolute";
+        svg.style.top = 0;
+        svg.style.left = 0;
+        svg.style.width = "100%";
+        svg.style.height = "100%";
+        svg.style.zIndex = 1;
+        svg.style.pointerEvents = "none";
+        svg.innerHTML = `
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="black" />
+            </marker>
+          </defs>
+        `;
+        document.getElementById("playground").appendChild(svg);
+      }
+      return svg;
+    }
+    ensureSvgLayer();
+
+    // get the top center of the playground
+    function getPlaygroundTopCenter() {
+      const pg = document.getElementById("playground");
+      return {
+        x: pg.clientWidth / 2 - 30,
+        y: 30
+      };
     }
 
+    // isOccupied: check if the position is already occupied by another node
+    function isOccupied(x, y) {
+      const nodeSize = 60;
+      return nodes.some(n =>
+        Math.abs(n.x - x) < nodeSize && Math.abs(n.y - y) < nodeSize
+      );
+    }
+
+    // recommend a child position based on the parent node's position
+    function getChildPosition(parentX, parentY) {
+      const offset = 60;
+      // 1. try left down
+      let x = parentX - offset, y = parentY + offset;
+      if (!isOccupied(x, y)) return { x, y };
+      // 2. try right down
+      x = parentX + offset;
+      if (!isOccupied(x, y)) return { x, y };
+      // 3. further left down
+      x = parentX - offset * 2; y = parentY + offset * 2;
+      if (!isOccupied(x, y)) return { x, y };
+      // 4. further right down
+      x = parentX + offset * 2;
+      if (!isOccupied(x, y)) return { x, y };
+      // 5. fallback: always below
+      x = parentX; y = parentY + offset * 3;
+      return { x, y };
+    }
+
+    // create a new node
+    function createNode(name, x, y, parentId = null) {
+      const div = document.createElement("div");
+      div.className = "node";
+      div.innerText = name;
+      div.style.left = x + "px";
+      div.style.top = y + "px";
+      div.dataset.id = nodeId++;
+      div.dataset.name = name;
+      if (parentId !== null) div.dataset.parentId = parentId;
+      div.style.zIndex = 10;
+      document.getElementById("playground").appendChild(div);
+      nodes.push({ id: div.dataset.id, name: name, x: x, y: y, el: div, parentId });
+
+      // playground height auto-adjust
+      const pg = document.getElementById("playground");
+      let neededHeight = y + 100;
+      if (pg.clientHeight < neededHeight) pg.style.height = neededHeight + "px";
+
+      div.addEventListener("contextmenu", async (e) => {
+        e.preventDefault();
+        showContextMenu(e.pageX, e.pageY, div);
+      });
+    }
+
+    // add a new node and draw an arrow from the source node to the new node
+    function addNewNodeAndArrow(source, newNodeName) {
+      const parentX = source.offsetLeft, parentY = source.offsetTop;
+      const { x, y } = getChildPosition(parentX, parentY);
+      createNode(newNodeName, x, y, source.dataset.id);
+      drawArrow(source, nodes[nodes.length - 1].el);
+    }
+
+    // draw an arrow between two nodes
+    function drawArrow(fromEl, toEl) {
+      const svg = ensureSvgLayer();
+      const x1 = fromEl.offsetLeft + 30, y1 = fromEl.offsetTop + 30;
+      const x2 = toEl.offsetLeft + 30, y2 = toEl.offsetTop + 30;
+      // narrow the line to avoid overlap with the node
+      const dx = x2 - x1, dy = y2 - y1;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const shrink = 34;
+      const sx1 = x1 + shrink * dx / dist, sy1 = y1 + shrink * dy / dist;
+      const sx2 = x2 - shrink * dx / dist, sy2 = y2 - shrink * dy / dist;
+
+      const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+      line.setAttribute("x1", sx1);
+      line.setAttribute("y1", sy1);
+      line.setAttribute("x2", sx2);
+      line.setAttribute("y2", sy2);
+      line.setAttribute("stroke", "black");
+      line.setAttribute("stroke-width", "2");
+      line.setAttribute("marker-end", "url(#arrow)");
+      svg.appendChild(line);
+    }
+
+    // show context menu on right click
+    async function showContextMenu(x, y, sourceNode) {
+      const model = document.getElementById("model").value;
+      const nodeName = sourceNode.dataset.name;
+      const res = await fetch("/ask_options", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ model, node: nodeName })
+      });
+      const data = await res.json();
+
+      const menu = document.getElementById("contextMenu");
+      const ul = menu.querySelector("ul");
+      ul.innerHTML = "";
+      data.options.forEach(opt => {
+        const li = document.createElement("li");
+        li.innerText = opt;
+        li.onclick = () => {
+          menu.style.display = "none";
+          addNewNodeAndArrow(sourceNode, opt);
+        };
+        ul.appendChild(li);
+      });
+
+      menu.style.left = x + "px";
+      menu.style.top = y + "px";
+      menu.style.display = "block";
+    }
+    document.body.addEventListener("click", () => {
+      document.getElementById("contextMenu").style.display = "none";
+    });
+
+    // submit a new node
+    function submitNode() {
+      const nodeName = document.getElementById("question").value.trim();
+      if (!nodeName) return;
+      if (nodes.length === 0) {
+        const { x, y } = getPlaygroundTopCenter();
+        createNode(nodeName, x, y);
+      } else {
+        // new node position
+        let offsetX = 60 + nodes.length * 40;
+        let x = Math.max(offsetX, 60);
+        createNode(nodeName, x, 30);
+      }
+    }
+
+    // resize the SVG layer when the window is resized
+    window.addEventListener('resize', () => {
+      const svg = document.getElementById("svgArrows");
+      if (svg) {
+        svg.setAttribute("width", document.getElementById("playground").clientWidth);
+        svg.setAttribute("height", document.getElementById("playground").clientHeight);
+      }
+    });
+
+    // initialize the SVG layer
     window.onload = function () {
-      const allModels = JSON.parse('{{ model_list | tojson | safe }}');
-      const filteredModels = allModels.filter(name =>
+      let allModels = JSON.parse('{{ model_list | tojson | safe }}');
+      let filteredModels = allModels.filter(name =>
         name.startsWith("server") || name.includes("client_2")
       );
-
-      const select = document.getElementById("model");
+      let select = document.getElementById("model");
+      select.innerHTML = "";
       filteredModels.forEach(model => {
         const option = document.createElement("option");
         option.value = model;
         option.textContent = model;
         select.appendChild(option);
       });
+      ensureSvgLayer();
     };
   </script>
-</head>
-<body>
-  <div class="header">
-    Ask Questions
-    <a class="login-btn" href="#">login/logout</a>
-    <div style="position: absolute; top: 20px; left: 30px; font-size: 20px;">client 2</div>
-  </div>
-
-  <div class="ask-section">
-    <label for="model">Choose your model</label>
-    <select id="model">
-      <!-- Dynamically populated -->
-    </select>
-
-    <label for="question">Type your question</label>
-    <textarea id="question" rows="4"></textarea>
-
-    <br><br>
-    <button onclick="sendQuestion()">Ask</button>
-
-    <div id="answer" class="answer-box">answer area</div>
-  </div>
 </body>
 </html>
