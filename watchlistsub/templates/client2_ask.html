@@ -30,6 +30,10 @@
       font-weight: bold;
       user-select: none;
       box-shadow: 0 2px 8px #0001;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 0 6px;
     }
     .context-menu {
       position: absolute;
@@ -60,6 +64,71 @@
       z-index: 1;
       pointer-events: none;
     }
+    .ask-section {
+      margin-bottom: 16px;
+      background: #f6f7fa;
+      border-radius: 12px;
+      padding: 20px 30px 10px 30px;
+      max-width: 1000px;
+      margin-left: auto;
+      margin-right: auto;
+      box-shadow: 0 2px 8px #0001;
+    }
+    .ask-section label {
+      margin-right: 8px;
+    }
+    .ask-section input[type="text"],
+    .ask-section textarea {
+      margin-right: 18px;
+      font-size: 15px;
+      border-radius: 4px;
+      padding: 4px 8px;
+      border: 1px solid #ccc;
+      outline: none;
+      resize: none;
+    }
+    .ask-section select {
+      margin-right: 18px;
+      font-size: 15px;
+      border-radius: 4px;
+      padding: 4px 8px;
+      border: 1px solid #ccc;
+    }
+    .ask-section button {
+      font-size: 15px;
+      border-radius: 4px;
+      padding: 4px 16px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      margin-top: 6px;
+      transition: background 0.2s;
+    }
+    .ask-section button:hover {
+      background: #0056b3;
+    }
+    .char-count {
+      font-size: 13px;
+      color: #666;
+      margin-left: 8px;
+    }
+    .custom-tooltip {
+      position: fixed;
+      background: #fff;
+      color: #222;
+      border: 1px solid #888;
+      box-shadow: 2px 2px 12px #8883;
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 15px;
+      z-index: 9999;
+      max-width: 350px;
+      word-break: break-all;
+      white-space: pre-line;
+      display: none;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -67,16 +136,24 @@
     <label for="model">Choose your model</label>
     <select id="model"></select>
     <label for="question" style="margin-left:1em;">Enter a workflow node name</label>
-    <input type="text" id="question">
+    <input type="text" id="question" maxlength="120">
+    <label for="topk" style="margin-left:1em;">Top-K</label>
+    <select id="topk"></select>
+    <br><br>
+    <label for="textinfo" style="vertical-align: top;">Text Information (max 200 words)</label>
+    <textarea id="textinfo" rows="3" cols="60" maxlength="1800" style="vertical-align: top;"></textarea>
+    <span class="char-count" id="wordCount">0 / 200 words</span>
+    <br>
     <button onclick="submitNode()">Submit</button>
   </div>
   <div id="playground"></div>
   <div id="contextMenu" class="context-menu"><ul></ul></div>
+  <div id="customTooltip" class="custom-tooltip"></div>
 
   <script>
-    // ========== Intialize the dropdowm ==========
+    // ========== Initialize dropdown ==========
     let modelList = JSON.parse('{{ model_list | tojson | safe }}');
-    let filteredModels = modelList.filter(name => name.startsWith("server") || name.includes("client_2_round"));
+    let filteredModels = modelList.filter(name => name.startsWith("server") || name.includes("client_2"));
     let select = document.getElementById("model");
     filteredModels.forEach(m => {
       let opt = document.createElement("option");
@@ -85,11 +162,44 @@
       select.appendChild(opt);
     });
 
+    // Top-K dropdown
+    let topkSelect = document.getElementById("topk");
+    for (let i = 1; i <= 10; i++) {
+      let opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = i;
+      topkSelect.appendChild(opt);
+    }
+
+    // Text info word count
+    document.getElementById("textinfo").addEventListener("input", function () {
+      let txt = this.value.trim();
+      let wordCount = txt.length ? txt.split(/\s+/).length : 0;
+      document.getElementById("wordCount").textContent = wordCount + " / 200 words";
+      if (wordCount > 200) {
+        this.value = txt.split(/\s+/).slice(0, 200).join(" ");
+        document.getElementById("wordCount").textContent = "200 / 200 words";
+      }
+    });
+
     // ========== global ==========
     let nodeId = 0;
     let nodes = [];
+    let hasRootNode = false;
 
-    // only one SVG layer
+    // Tooltip DOM
+    const tooltip = document.getElementById('customTooltip');
+    function showTooltip(text, x, y) {
+      tooltip.textContent = text;
+      tooltip.style.left = x + 12 + 'px';
+      tooltip.style.top = y + 10 + 'px';
+      tooltip.style.display = 'block';
+    }
+    function hideTooltip() {
+      tooltip.style.display = 'none';
+    }
+
+    // Only one SVG layer
     function ensureSvgLayer() {
       let svg = document.getElementById("svgArrows");
       if (!svg) {
@@ -152,11 +262,13 @@
       return { x, y };
     }
 
-    // create a new node
+    // create a new node (ellipsis & custom tooltip on overflow)
     function createNode(name, x, y, parentId = null) {
       const div = document.createElement("div");
       div.className = "node";
-      div.innerText = name;
+      let displayText = name.length > 11 ? name.slice(0, 9) + "…" : name;
+      div.innerText = displayText;
+      div.title = ""; // Avoid browser tooltip
       div.style.left = x + "px";
       div.style.top = y + "px";
       div.dataset.id = nodeId++;
@@ -175,6 +287,19 @@
         e.preventDefault();
         showContextMenu(e.pageX, e.pageY, div);
       });
+
+      // ===== Custom tooltip for long text =====
+      if (name.length > 11) {
+        div.addEventListener('mouseenter', function(e) {
+          showTooltip(name, e.clientX, e.clientY);
+        });
+        div.addEventListener('mousemove', function(e) {
+          showTooltip(name, e.clientX, e.clientY);
+        });
+        div.addEventListener('mouseleave', function(e) {
+          hideTooltip();
+        });
+      }
     }
 
     // add a new node and draw an arrow from the source node to the new node
@@ -190,7 +315,6 @@
       const svg = ensureSvgLayer();
       const x1 = fromEl.offsetLeft + 30, y1 = fromEl.offsetTop + 30;
       const x2 = toEl.offsetLeft + 30, y2 = toEl.offsetTop + 30;
-      // narrow the line to avoid overlap with the node
       const dx = x2 - x1, dy = y2 - y1;
       const dist = Math.sqrt(dx*dx + dy*dy);
       const shrink = 34;
@@ -212,10 +336,14 @@
     async function showContextMenu(x, y, sourceNode) {
       const model = document.getElementById("model").value;
       const nodeName = sourceNode.dataset.name;
+      const topk = document.getElementById("topk").value;
+      const textinfo = document.getElementById("textinfo").value.trim();
+
+      // send all data including topk and textinfo
       const res = await fetch("/ask_options", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ model, node: nodeName })
+        body: new URLSearchParams({ model, node: nodeName, topk, textinfo })
       });
       const data = await res.json();
 
@@ -238,21 +366,19 @@
     }
     document.body.addEventListener("click", () => {
       document.getElementById("contextMenu").style.display = "none";
+      hideTooltip();
     });
 
-    // submit a new node
+    // submit a new node (only first time)
     function submitNode() {
       const nodeName = document.getElementById("question").value.trim();
-      if (!nodeName) return;
-      if (nodes.length === 0) {
+      if (!hasRootNode && nodeName) {
         const { x, y } = getPlaygroundTopCenter();
         createNode(nodeName, x, y);
-      } else {
-        // new node position
-        let offsetX = 60 + nodes.length * 40;
-        let x = Math.max(offsetX, 60);
-        createNode(nodeName, x, 30);
+        hasRootNode = true;
+        document.getElementById("question").disabled = true; // lock node name input
       }
+      // If root node exists, do nothing. topk/textinfo will be updated and used during right-click recommend.
     }
 
     // resize the SVG layer when the window is resized
@@ -264,7 +390,7 @@
       }
     });
 
-    // initialize the SVG layer
+    // initialize the SVG layer and topk dropdown
     window.onload = function () {
       let allModels = JSON.parse('{{ model_list | tojson | safe }}');
       let filteredModels = allModels.filter(name =>
