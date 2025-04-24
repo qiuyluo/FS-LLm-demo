@@ -5,7 +5,7 @@ import os
 import tempfile
 from model_utils import get_answer
 
-HF_TOKEN = "hf_xxxxxxxxxxx"  # Replace with your actual token
+HF_TOKEN = "hf_xxxxxx"  # Replace with your actual token
 REPO_ID = "Annie0430/test_fileIO"
 CKPT_PREFIX = "test_whole_process/server/ckpt/"
 
@@ -76,7 +76,9 @@ def ask(client_id):
 def ask_options():
     model = request.form.get("model")
     node = request.form.get("node")
-    print(f"Model: {model}, Node: {node}")
+    topk = request.form.get("topk")
+    textinfo = request.form.get("textinfo")
+    print(f"Model: {model}, Node: {node}, Topk: {topk}, Textinfo: {textinfo}")
     # Dummy logic: Replace this with your real logic
     options = get_answer(model, node)
     print(f"Options: {options}")
