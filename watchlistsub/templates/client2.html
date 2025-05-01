@@ -3,23 +3,85 @@
 <head>
   <title>Client 2</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #eaf4fc;
+      margin: 0;
+      padding: 0;
+    }
+    .wrapper {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 40px;
+      margin-bottom: 30px;
+    }
+    .description {
+      text-align: center;
+      font-size: 16px;
+      color: #555;
+      max-width: 600px;
+      margin: 0 auto 40px;
+    }
+    .step {
+      margin: 30px 0;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background: #f9f9f9;
+    }
+    .step h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+    .step p {
+      margin-bottom: 16px;
+      font-size: 15px;
+    }
+    .step button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .step button:hover {
+      background-color: #0056b3;
+    }
+    .file-input {
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
-  <div style="text-align:right">login/logout</div>
-  <h1 style="text-align:center;">Client 2</h1>
-  <div style="display:flex; justify-content:center; gap:50px; padding:20px;">
-    <div>
-      <h2>Update Dataset</h2>
-      <p>Initialize the model and customize the llm</p>
+  <div style="text-align:right; padding: 10px 20px;">login/logout</div>
+  <div class="wrapper">
+    <h1>Welcome, Bob!</h1>
+    <p class="description">
+      This assistant is built on a federated learning framework to fine-tune your personalized LLM using local knowledge graphs for workflow recommendation.
+    </p>
+
+    <div class="step">
+      <h2>Step 1: Update Dataset</h2>
+      <p>Choose a local knowledge graph file to fine-tune your LLM in a federated learning setting.</p>
       <form action="{{ url_for('upload', client_id='client2') }}" method="post" enctype="multipart/form-data">
-        <input type="file" name="file">
+        <input class="file-input" type="file" name="file">
+        <br><br>
         <button type="submit">Upload</button>
       </form>
     </div>
-    <div>
-      <h2>Ask Questions</h2>
-      <p>test your customize llm</p>
-      <form action="{{ url_for('client2_ask') }}">
+
+    <div class="step">
+      <h2>Step 2: Ask Questions</h2>
+      <p>Use the aggregated model to ask workflow-related questions powered by your fine-tuned LLM.</p>
+      <form action="{{ url_for('client2_ask_prod') }}">
         <button type="submit">Go</button>
       </form>
     </div>

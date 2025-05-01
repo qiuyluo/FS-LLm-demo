@@ -4,7 +4,7 @@ from peft import PeftModelForCausalLM
 from huggingface_hub import hf_hub_download
 import ast
 
-HF_TOKEN = "hf_xxXxXxXxXxXxXxXxXxXx"  # Replace with your actual token
+HF_TOKEN = "hf_xxxxx"  # Replace with your actual token
 REPO_ID = "Annie0430/test_fileIO"
 BASE_MODEL = "meta-llama/Llama-3.1-8B-Instruct"
 
@@ -80,7 +80,7 @@ _loaded = {}
 #         return []
 
 
-def get_answer(model, node):
+def get_answer(model, node, topk, textinfo):
     print("In get_answer")
-    next_steps = ["step_a", "step_b", "step_c"]
+    next_steps = ["step_axxxxxxxxxxxxx", "step_b", "step_c"]
     return next_steps

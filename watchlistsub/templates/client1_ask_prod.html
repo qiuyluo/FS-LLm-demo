@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Workflow Builder - Client 2</title>
+  <title>Workflow Builder - Client 1</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <style>
     #playground {
@@ -78,7 +78,8 @@
       margin-right: 8px;
     }
     .ask-section input[type="text"],
-    .ask-section textarea {
+    .ask-section textarea,
+    .ask-section select {
       margin-right: 18px;
       font-size: 15px;
       border-radius: 4px;
@@ -86,13 +87,6 @@
       border: 1px solid #ccc;
       outline: none;
       resize: none;
-    }
-    .ask-section select {
-      margin-right: 18px;
-      font-size: 15px;
-      border-radius: 4px;
-      padding: 4px 8px;
-      border: 1px solid #ccc;
     }
     .ask-section button {
       font-size: 15px;
@@ -133,8 +127,6 @@
 </head>
 <body>
   <div class="ask-section">
-    <label for="model">Choose your model</label>
-    <select id="model"></select>
     <label for="question" style="margin-left:1em;">Enter a workflow node name</label>
     <input type="text" id="question" maxlength="120">
     <label for="topk" style="margin-left:1em;">Top-K</label>
@@ -151,18 +143,6 @@
   <div id="customTooltip" class="custom-tooltip"></div>
 
   <script>
-    // ========== Initialize dropdown ==========
-    let modelList = JSON.parse('{{ model_list | tojson | safe }}');
-    let filteredModels = modelList.filter(name => name.startsWith("server") || name.includes("client_2"));
-    let select = document.getElementById("model");
-    filteredModels.forEach(m => {
-      let opt = document.createElement("option");
-      opt.value = m;
-      opt.textContent = m;
-      select.appendChild(opt);
-    });
-
-    // Top-K dropdown
     let topkSelect = document.getElementById("topk");
     for (let i = 1; i <= 10; i++) {
       let opt = document.createElement("option");
@@ -171,7 +151,6 @@
       topkSelect.appendChild(opt);
     }
 
-    // Text info word count
     document.getElementById("textinfo").addEventListener("input", function () {
       let txt = this.value.trim();
       let wordCount = txt.length ? txt.split(/\s+/).length : 0;
@@ -182,12 +161,10 @@
       }
     });
 
-    // ========== global ==========
     let nodeId = 0;
     let nodes = [];
     let hasRootNode = false;
 
-    // Tooltip DOM
     const tooltip = document.getElementById('customTooltip');
     function showTooltip(text, x, y) {
       tooltip.textContent = text;
@@ -199,7 +176,6 @@
       tooltip.style.display = 'none';
     }
 
-    // Only one SVG layer
     function ensureSvgLayer() {
       let svg = document.getElementById("svgArrows");
       if (!svg) {
@@ -225,50 +201,36 @@
     }
     ensureSvgLayer();
 
-    // get the top center of the playground
     function getPlaygroundTopCenter() {
       const pg = document.getElementById("playground");
-      return {
-        x: pg.clientWidth / 2 - 30,
-        y: 30
-      };
+      return { x: pg.clientWidth / 2 - 30, y: 30 };
     }
 
-    // isOccupied: check if the position is already occupied by another node
     function isOccupied(x, y) {
       const nodeSize = 60;
-      return nodes.some(n =>
-        Math.abs(n.x - x) < nodeSize && Math.abs(n.y - y) < nodeSize
-      );
+      return nodes.some(n => Math.abs(n.x - x) < nodeSize && Math.abs(n.y - y) < nodeSize);
     }
 
-    // recommend a child position based on the parent node's position
     function getChildPosition(parentX, parentY) {
       const offset = 60;
-      // 1. try left down
       let x = parentX - offset, y = parentY + offset;
       if (!isOccupied(x, y)) return { x, y };
-      // 2. try right down
       x = parentX + offset;
       if (!isOccupied(x, y)) return { x, y };
-      // 3. further left down
       x = parentX - offset * 2; y = parentY + offset * 2;
       if (!isOccupied(x, y)) return { x, y };
-      // 4. further right down
       x = parentX + offset * 2;
       if (!isOccupied(x, y)) return { x, y };
-      // 5. fallback: always below
       x = parentX; y = parentY + offset * 3;
       return { x, y };
     }
 
-    // create a new node (ellipsis & custom tooltip on overflow)
     function createNode(name, x, y, parentId = null) {
       const div = document.createElement("div");
       div.className = "node";
       let displayText = name.length > 11 ? name.slice(0, 9) + "…" : name;
       div.innerText = displayText;
-      div.title = ""; // Avoid browser tooltip
+      div.title = "";
       div.style.left = x + "px";
       div.style.top = y + "px";
       div.dataset.id = nodeId++;
@@ -278,7 +240,6 @@
       document.getElementById("playground").appendChild(div);
       nodes.push({ id: div.dataset.id, name: name, x: x, y: y, el: div, parentId });
 
-      // playground height auto-adjust
       const pg = document.getElementById("playground");
       let neededHeight = y + 100;
       if (pg.clientHeight < neededHeight) pg.style.height = neededHeight + "px";
@@ -288,21 +249,13 @@
         showContextMenu(e.pageX, e.pageY, div);
       });
 
-      // ===== Custom tooltip for long text =====
       if (name.length > 11) {
-        div.addEventListener('mouseenter', function(e) {
-          showTooltip(name, e.clientX, e.clientY);
-        });
-        div.addEventListener('mousemove', function(e) {
-          showTooltip(name, e.clientX, e.clientY);
-        });
-        div.addEventListener('mouseleave', function(e) {
-          hideTooltip();
-        });
+        div.addEventListener('mouseenter', e => showTooltip(name, e.clientX, e.clientY));
+        div.addEventListener('mousemove', e => showTooltip(name, e.clientX, e.clientY));
+        div.addEventListener('mouseleave', hideTooltip);
       }
     }
 
-    // add a new node and draw an arrow from the source node to the new node
     function addNewNodeAndArrow(source, newNodeName) {
       const parentX = source.offsetLeft, parentY = source.offsetTop;
       const { x, y } = getChildPosition(parentX, parentY);
@@ -310,7 +263,6 @@
       drawArrow(source, nodes[nodes.length - 1].el);
     }
 
-    // draw an arrow between two nodes
     function drawArrow(fromEl, toEl) {
       const svg = ensureSvgLayer();
       const x1 = fromEl.offsetLeft + 30, y1 = fromEl.offsetTop + 30;
@@ -332,18 +284,15 @@
       svg.appendChild(line);
     }
 
-    // show context menu on right click
     async function showContextMenu(x, y, sourceNode) {
-      const model = document.getElementById("model").value;
       const nodeName = sourceNode.dataset.name;
       const topk = document.getElementById("topk").value;
       const textinfo = document.getElementById("textinfo").value.trim();
 
-      // send all data including topk and textinfo
       const res = await fetch("/ask_options", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({ model, node: nodeName, topk, textinfo })
+        body: new URLSearchParams({ node: nodeName, topk, textinfo })
       });
       const data = await res.json();
 
@@ -364,24 +313,22 @@
       menu.style.top = y + "px";
       menu.style.display = "block";
     }
+
     document.body.addEventListener("click", () => {
       document.getElementById("contextMenu").style.display = "none";
       hideTooltip();
     });
 
-    // submit a new node (only first time)
     function submitNode() {
       const nodeName = document.getElementById("question").value.trim();
       if (!hasRootNode && nodeName) {
         const { x, y } = getPlaygroundTopCenter();
         createNode(nodeName, x, y);
         hasRootNode = true;
-        document.getElementById("question").disabled = true; // lock node name input
+        document.getElementById("question").disabled = true;
       }
-      // If root node exists, do nothing. topk/textinfo will be updated and used during right-click recommend.
     }
 
-    // resize the SVG layer when the window is resized
     window.addEventListener('resize', () => {
       const svg = document.getElementById("svgArrows");
       if (svg) {
@@ -390,20 +337,7 @@
       }
     });
 
-    // initialize the SVG layer and topk dropdown
     window.onload = function () {
-      let allModels = JSON.parse('{{ model_list | tojson | safe }}');
-      let filteredModels = allModels.filter(name =>
-        name.startsWith("server") || qname.includes("client_2")
-      );
-      let select = document.getElementById("model");
-      select.innerHTML = "";
-      filteredModels.forEach(model => {
-        const option = document.createElement("option");
-        option.value = model;
-        option.textContent = model;
-        select.appendChild(option);
-      });
       ensureSvgLayer();
     };
   </script>
