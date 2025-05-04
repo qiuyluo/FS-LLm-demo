@@ -32,7 +32,7 @@
       padding: 20px;
       border: 1px solid #ccc;
       border-radius: 10px;
-      background: #f9f9f9;
+      background: #ffffff;
     }
     .step h2 {
       margin-top: 0;
@@ -65,26 +65,30 @@
   <div class="wrapper">
     <h1>Welcome, Amy!</h1>
     <p class="description">
-      This assistant is built on a federated learning framework to fine-tune your personalized LLM using local knowledge graphs for workflow recommendation.
+      This AI assistant is built on a federated learning framework to fine-tune your personalized LLM using local knowledge graphs for workflow recommendation.
     </p>
 
     <div class="step">
       <h2>Step 1: Update Dataset</h2>
       <p>Choose a local knowledge graph file to fine-tune your LLM in a federated learning setting.</p>
+      <img src="{{ url_for('static', filename='upload_flow.png') }}" alt="Upload Flow" style="width:100%; max-width:400px; display:block; margin: 20px 0;">
       <form action="{{ url_for('upload', client_id='client1') }}" method="post" enctype="multipart/form-data">
         <input class="file-input" type="file" name="file">
         <br><br>
         <button type="submit">Upload</button>
       </form>
     </div>
-
+    
     <div class="step">
       <h2>Step 2: Ask Questions</h2>
       <p>Use the aggregated model to ask workflow-related questions powered by your fine-tuned LLM.</p>
+      <img src="{{ url_for('static', filename='answer_flow.png') }}" alt="Question Flow" style="width:100%; max-width:300px; display:block; margin: 20px 0;">
       <form action="{{ url_for('client1_ask_prod') }}">
         <button type="submit">Go</button>
       </form>
     </div>
+    
+    
   </div>
 </body>
 </html>
