@@ -5,7 +5,7 @@ import os
 import tempfile
 from model_utils import get_answer
 
-HF_TOKEN = "hf_xxxxxxxx"  # Replace with your actual token
+HF_TOKEN = "hf_xxxxxxxxxxxxxx"  # Replace with your actual token
 REPO_ID = "Annie0430/test_fileIO"
 CKPT_PREFIX = "test_whole_process/server/ckpt/"
 
@@ -71,7 +71,7 @@ def upload(client_id):
         finally:
             os.remove(tmp_file_path)
 
-    return redirect(url_for(f'{client_id}_ask'))
+    return redirect(url_for(f'{client_id}_home'))
 
 @app.route('/ask/<client_id>', methods=['POST'])
 def ask(client_id):
