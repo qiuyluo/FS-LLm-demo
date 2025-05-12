@@ -1,19 +1,14 @@
-# Watchlist
+# FS-LLM
 
-Example application for flask tutorial "[Flask 入门教程](https://helloflask.com/book/3)".
+## Homepage
+![image](https://github.com/user-attachments/assets/7a6aae01-fdae-48cd-9e76-fbc74db33118)
 
-Demo: http://watchlist.helloflask.com
-
-![Screenshot](https://helloflask.com/screenshots/watchlist.png)
+## Experiment Playground
+![image](https://github.com/user-attachments/assets/4c9aec6b-f8fe-4d29-9634-cbafa8108084)
 
 
 ## Installation
 
-clone:
-```
-$ git clone https://github.com/helloflask/watchlist.git
-$ cd watchlist
-```
 create & active virtual enviroment then install dependencies:
 ```
 $ python3 -m venv env  # use `python ...` on Windows
