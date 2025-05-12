@@ -5,7 +5,7 @@ import os
 import tempfile
 from model_utils import get_answer
 
-HF_TOKEN = "hf_xxxxxxxx"  # Replace with your actual token
+HF_TOKEN = "hf_xxxxxxxxxxxxxx"  # Replace with your actual token
 REPO_ID = "Annie0430/test_fileIO"
 CKPT_PREFIX = "test_whole_process/server/ckpt/"
 
@@ -39,6 +39,13 @@ def client2_ask():
     model_list = get_model_names_from_huggingface()
     return render_template('client2_ask.html', model_list=model_list)
 
+@app.route('/client1/prod/ask')
+def client1_ask_prod():
+    return render_template('client1_ask_prod.html')
+
+@app.route('/client2/prod/ask')
+def client2_ask_prod():
+    return render_template('client2_ask_prod.html')
 
 @app.route('/upload/<client_id>', methods=['POST'])
 def upload(client_id):
@@ -64,7 +71,7 @@ def upload(client_id):
         finally:
             os.remove(tmp_file_path)
 
-    return redirect(url_for(f'{client_id}_ask'))
+    return redirect(url_for(f'{client_id}_home'))
 
 @app.route('/ask/<client_id>', methods=['POST'])
 def ask(client_id):
@@ -72,6 +79,18 @@ def ask(client_id):
     question = request.form.get('question')
     answer = get_answer(client_id, model, question)
     return jsonify({'answer': answer})
+
+@app.route("/ask_options", methods=["POST"])
+def ask_options():
+    model = request.form.get("model")
+    node = request.form.get("node")
+    topk = request.form.get("topk")
+    textinfo = request.form.get("textinfo")
+    print(f"Model: {model}, Node: {node}, Topk: {topk}, Textinfo: {textinfo}")
+    # Dummy logic: Replace this with your real logic
+    options = get_answer(model, node, topk, textinfo)
+    print(f"Options: {options}")
+    return jsonify({"options": options})
 
 if __name__ == '__main__':
     app.run(debug=True)
